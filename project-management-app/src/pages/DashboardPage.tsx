@@ -9,6 +9,8 @@ import { RootState } from '../store/store';
 
 import ProjectCard from '../components/ProjectCard';
 import { Project } from '../types';
+import Navbar from '../components/Navbar';
+
 
 const DashboardPage: React.FC = () => {
     const [projects, setProjects] = useState<Project[]>([]);
@@ -57,7 +59,9 @@ const DashboardPage: React.FC = () => {
     };
 
     return (
+
         <div>
+            <Navbar />
             <h2>Dashboard</h2>
             <form onSubmit={handleCreateProject}>
                 <input
