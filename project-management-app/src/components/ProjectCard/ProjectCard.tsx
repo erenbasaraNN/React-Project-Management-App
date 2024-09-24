@@ -7,15 +7,21 @@ import { Project } from '../../types';
 
 interface ProjectCardProps {
     project: Project;
+    onEdit: (project: Project) => void; // Düzenleme fonksiyonu
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => (
+const ProjectCard: React.FC<ProjectCardProps> = ({ project, onEdit }) => (
     <div className={styles.card}>
         <h3 className={styles.title}>{project.name}</h3>
         <p className={styles.description}>{project.description}</p>
-        <Link to={`/projects/${project.id}`} className={styles.link}>
-            View Details
-        </Link>
+        <div className={styles.actions}>
+            <Link to={`/projects/${project.id}`} className={styles.link}>
+                Detayları Görüntüle
+            </Link>
+            <button onClick={() => onEdit(project)} className={styles.editButton}>
+                Düzenle
+            </button>
+        </div>
     </div>
 );
 

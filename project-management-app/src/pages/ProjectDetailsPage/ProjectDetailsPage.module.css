@@ -1,0 +1,27 @@
+/* src/pages/ProjectDetailsPage/ProjectDetailsPage.module.css */
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.taskList {
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}

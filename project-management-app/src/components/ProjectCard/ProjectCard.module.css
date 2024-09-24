@@ -15,8 +15,27 @@
     margin-bottom: 20px;
 }
 
+.actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .link {
     text-decoration: none;
     color: #1976d2;
     font-weight: bold;
+}
+
+.editButton {
+    background-color: #ffa726;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.editButton:hover {
+    opacity: 0.9;
 }
