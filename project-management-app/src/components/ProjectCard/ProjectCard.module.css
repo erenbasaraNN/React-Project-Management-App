@@ -1,0 +1,22 @@
+/* src/components/ProjectCard/ProjectCard.module.css */
+
+.card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+    margin-top: 0;
+}
+
+.description {
+    margin-bottom: 20px;
+}
+
+.link {
+    text-decoration: none;
+    color: #1976d2;
+    font-weight: bold;
+}

@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { collection, addDoc, query, where, getDocs, Timestamp } from "firebase/firestore";
-import { db } from "../services/firebase";
-import { Task } from "../types";
-import TaskCard from "../components/TaskCard";
+import { db } from "../../services/firebase.ts";
+import { Task } from "../../types";
+import TaskCard from "../../components/TaskCard/TaskCard.tsx";
 
 const ProjectDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();

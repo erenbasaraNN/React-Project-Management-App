@@ -3,17 +3,17 @@
 import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import ProjectDetailsPage from './pages/ProjectDetailsPage';
-import PrivateRoute from './components/PrivateRoute';
+import { onAuthStateChanged } from 'firebase/auth';
 
 import { auth } from './services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
 import { setUser, clearUser } from './store/slices/userSlice';
 import { AppDispatch } from './store/store';
+
+import LoginPage from './pages/LoginPage/LoginPage';
+import RegisterPage from './pages/RegisterPage/RegisterPage';
+import DashboardPage from './pages/DashboardPage/DashboardPage';
+import ProjectDetailsPage from './pages/ProjectDetailsPage/ProjectDetailsPage';
+import PrivateRoute from './components/PrivateRoute';
 
 const App: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -32,16 +32,15 @@ const App: React.FC = () => {
             }
         });
 
-        // Cleanup subscription on unmount
         return () => unsubscribe();
     }, [dispatch]);
 
     return (
         <Routes>
-            <Route path='/' element={<LoginPage />} />
-            <Route path='/register' element={<RegisterPage />} />
+            <Route path="/" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route
-                path='/dashboard'
+                path="/dashboard"
                 element={
                     <PrivateRoute>
                         <DashboardPage />
@@ -49,13 +48,14 @@ const App: React.FC = () => {
                 }
             />
             <Route
-                path='/projects/:id'
+                path="/projects/:id"
                 element={
                     <PrivateRoute>
                         <ProjectDetailsPage />
                     </PrivateRoute>
                 }
             />
+            {/* Add additional routes as needed */}
         </Routes>
     );
 };

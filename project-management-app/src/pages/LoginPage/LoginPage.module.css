@@ -1,0 +1,16 @@
+/* src/pages/LoginPage/LoginPage.module.css */
+
+.container {
+    margin: 50px auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+}
+
+p {
+    margin-top: 20px;
+}
