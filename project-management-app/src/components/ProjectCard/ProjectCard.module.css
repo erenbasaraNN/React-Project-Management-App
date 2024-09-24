@@ -4,15 +4,15 @@
     background-color: white;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    /* Diğer stiller */
 }
 
 .title {
-    margin-top: 0;
+    /* Stiller */
 }
 
 .description {
-    margin-bottom: 20px;
+    /* Stiller */
 }
 
 .actions {
@@ -27,6 +27,10 @@
     font-weight: bold;
 }
 
+.buttonGroup {
+    display: flex;
+}
+
 .editButton {
     background-color: #ffa726;
     color: white;
@@ -34,8 +38,22 @@
     padding: 8px 12px;
     border-radius: 4px;
     cursor: pointer;
+    margin-right: 8px;
 }
 
 .editButton:hover {
+    opacity: 0.9;
+}
+
+.deleteButton {
+    background-color: #e57373;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.deleteButton:hover {
     opacity: 0.9;
 }

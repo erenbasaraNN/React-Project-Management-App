@@ -1,16 +1,10 @@
 // src/components/common/Button.tsx
 
 import React from 'react';
-import styles from './Button.module.css';
+import { Button as MuiButton, ButtonProps } from '@mui/material';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary';
-}
-
-const Button: React.FC<ButtonProps> = ({ variant = 'primary', children, ...props }) => (
-    <button className={`${styles.button} ${styles[variant]}`} {...props}>
-        {children}
-    </button>
-);
+const Button: React.FC<ButtonProps> = (props) => {
+    return <MuiButton variant="contained" {...props} />;
+};
 
 export default Button;

@@ -1,30 +1,63 @@
 // src/pages/ProjectDetailsPage/ProjectDetailsPage.tsx
 
 import React, { useState, useEffect } from 'react';
-import styles from './ProjectDetailsPage.module.css';
+import {
+  Grid,
+  Typography,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+} from '@mui/material';
 import { useParams } from 'react-router-dom';
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
-import { db } from '../../services/firebase';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  updateDoc,
+  doc,
+  Timestamp,
+} from 'firebase/firestore';
+import { db, auth } from '../../services/firebase';
 import { Task } from '../../types';
 import AppLayout from '../../components/layouts/AppLayout';
 import Button from '../../components/common/Button';
-import Modal from '../../components/common/Modal';
-import Input from '../../components/common/Input';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import TaskCard from '../../components/TaskCard/TaskCard';
-import { getAuth } from "firebase/auth";
+import EditIcon from '@mui/icons-material/Edit';
 
 
 const ProjectDetailsPage: React.FC = () => {
   const { id: projectId } = useParams<{ id: string }>();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
-  const [taskStatus, setTaskStatus] = useState('To Do');
-  const [loading, setLoading] = useState(true);
+  const [taskStatus, setTaskStatus] = useState('Yapılacak');
+  const [taskPriority, setTaskPriority] = useState('Normal');
+  const [taskStartDate, setTaskStartDate] = useState('');
+  const [taskEndDate, setTaskEndDate] = useState('');
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [groups, setGroups] = useState<string[]>(['Yapılacak', 'Yapılıyor', 'Tamamlandı']);
+  const [users, setUsers] = useState<any[]>([]);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   const fetchTasks = async () => {
     if (projectId) {
@@ -32,45 +65,90 @@ const ProjectDetailsPage: React.FC = () => {
       try {
         const q = query(collection(db, 'tasks'), where('projectId', '==', projectId));
         const querySnapshot = await getDocs(q);
-        const tasksData: Task[] = querySnapshot.docs.map((doc) => ({
-          ...(doc.data() as Task),
-          id: doc.id,
-          createdAt: doc.data().createdAt.toDate(),
-        }));
+        const tasksData: Task[] = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            ...(data as Task),
+            id: doc.id,
+            createdAt: data.createdAt.toDate(),
+            lastUpdatedAt: data.lastUpdatedAt ? data.lastUpdatedAt.toDate() : null,
+          };
+        });
+        console.log('Görevler:', tasksData); // Görevleri konsola yazdırın
         setTasks(tasksData);
       } catch (error) {
         console.error('Görevler getirilirken hata oluştu:', error);
       } finally {
         setLoading(false);
       }
+      console.log('Proje ID:', projectId);
+    }
+  };
+
+
+  const fetchUsers = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'users'));
+      const usersData = querySnapshot.docs.map((doc) => ({
+        ...(doc.data()),
+        id: doc.id,
+      }));
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Kullanıcılar getirilirken hata oluştu:', error);
     }
   };
 
   useEffect(() => {
     fetchTasks();
+    fetchUsers();
   }, [projectId]);
 
-  const handleCreateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const user = getAuth().currentUser; // Firebase Authentication'dan kullanıcıyı al
-    if (projectId && user) {
-      try {
+  const handleCreateOrUpdateTask = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser || !projectId) return;
+
+    try {
+      if (taskToEdit) {
+        // Update existing task
+        await updateDoc(doc(db, 'tasks', taskToEdit.id), {
+          title: taskTitle,
+          description: taskDescription,
+          status: taskStatus,
+          priority: taskPriority,
+          startDate: taskStartDate,
+          endDate: taskEndDate,
+          lastUpdatedBy: currentUser.displayName || 'Unknown',
+          lastUpdatedAt: Timestamp.now(),
+        });
+      } else {
+        // Create new task
         await addDoc(collection(db, 'tasks'), {
           title: taskTitle,
           description: taskDescription,
           status: taskStatus,
+          priority: taskPriority,
+          startDate: taskStartDate,
+          endDate: taskEndDate,
           projectId: projectId,
-          ownerId: user.uid, // Görev oluşturucunun UID'sini ekliyoruz
+          ownerId: currentUser.uid,
+          assignees: [],
           createdAt: Timestamp.now(),
+          lastUpdatedBy: currentUser.displayName || 'Unknown',
+          lastUpdatedAt: Timestamp.now(),
         });
-        setTaskTitle('');
-        setTaskDescription('');
-        setTaskStatus('To Do');
-        setIsModalOpen(false);
-        fetchTasks(); // Görevleri yeniden yükleyin
-      } catch (error) {
-        console.error('Görev oluşturulurken hata oluştu:', error);
       }
+      setTaskTitle('');
+      setTaskDescription('');
+      setTaskStatus('Yapılacak');
+      setTaskPriority('Normal');
+      setTaskStartDate('');
+      setTaskEndDate('');
+      setIsModalOpen(false);
+      setTaskToEdit(null);
+      await fetchTasks();
+    } catch (error) {
+      console.error('Görev kaydedilirken hata oluştu:', error);
     }
   };
 
@@ -79,114 +157,248 @@ const ProjectDetailsPage: React.FC = () => {
     setTaskTitle(task.title);
     setTaskDescription(task.description);
     setTaskStatus(task.status);
-    setIsEditModalOpen(true);
+    setTaskPriority(task.priority);
+    setTaskStartDate(task.startDate || '');
+    setTaskEndDate(task.endDate || '');
+    setIsModalOpen(true);
   };
 
-  const handleUpdateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (taskToEdit) {
+  const handleGroupNameChange = (index: number, newName: string) => {
+    const newGroups = [...groups];
+    newGroups[index] = newName;
+    setGroups(newGroups);
+  };
+
+  const handleAssignUsers = (task: Task) => {
+    setSelectedTask(task);
+    setSelectedUsers(task.assignees || []);
+    setIsAssignModalOpen(true);
+  };
+
+  const handleSaveAssignees = async () => {
+    if (selectedTask) {
       try {
-        await updateDoc(doc(db, 'tasks', taskToEdit.id), {
-          title: taskTitle,
-          description: taskDescription,
-          status: taskStatus,
+        await updateDoc(doc(db, 'tasks', selectedTask.id), {
+          assignees: selectedUsers,
         });
-        setIsEditModalOpen(false);
-        setTaskTitle('');
-        setTaskDescription('');
-        setTaskStatus('To Do');
-        setTaskToEdit(null);
-        fetchTasks();
+        setIsAssignModalOpen(false);
+        setSelectedTask(null);
+        setSelectedUsers([]);
+        await fetchTasks();
       } catch (error) {
-        console.error('Görev güncellenirken hata oluştu:', error);
+        console.error('Atama yapılırken hata oluştu:', error);
       }
     }
   };
 
   return (
       <AppLayout>
-        <div className={styles.header}>
-          <h2>Görevler</h2>
+        <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+          <Typography variant="h4">Proje Detayları</Typography>
           <Button onClick={() => setIsModalOpen(true)}>Yeni Görev</Button>
-        </div>
+        </Grid>
         {loading ? (
-            <LoadingSpinner />
+            <CircularProgress />
         ) : (
-            <div className={styles.taskList}>
-              {tasks.map((task) => (
-                  <TaskCard key={task.id} task={task} onEdit={handleEditTask} />
-              ))}
-            </div>
+            groups.map((groupName, index) => (
+                <TableContainer component={Paper} sx={{ mb: 3 }} key={index}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell colSpan={7}>
+                          <Typography
+                              variant="h6"
+                              contentEditable
+                              suppressContentEditableWarning
+                              onBlur={(e) =>
+                                  handleGroupNameChange(index, e.currentTarget.textContent || '')
+                              }
+                          >
+                            {groupName}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Görev Adı</TableCell>
+                        <TableCell>Atananlar</TableCell>
+                        <TableCell>Durum</TableCell>
+                        <TableCell>Öncelik</TableCell>
+                        <TableCell>Zaman Çizelgesi</TableCell>
+                        <TableCell>Son Güncelleme</TableCell>
+                        <TableCell>Aksiyonlar</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {tasks
+                          .filter((task) => task.status === groupName)
+                          .map((task) => (
+                              <TableRow key={task.id}>
+                                <TableCell>{task.title}</TableCell>
+                                <TableCell>
+                                  {task.assignees && task.assignees.length > 0
+                                      ? task.assignees.join(', ')
+                                      : 'Atama yapılmadı'}
+                                  <IconButton onClick={() => handleAssignUsers(task)}>
+                                    <EditIcon />
+                                  </IconButton>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography
+                                      sx={{
+                                        backgroundColor:
+                                            task.status === 'Yapılacak'
+                                                ? 'gray'
+                                                : task.status === 'Yapılıyor'
+                                                    ? 'orange'
+                                                    : 'green',
+                                        color: 'white',
+                                        borderRadius: 1,
+                                        textAlign: 'center',
+                                        padding: '4px 8px',
+                                      }}
+                                  >
+                                    {task.status}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography
+                                      sx={{
+                                        backgroundColor:
+                                            task.priority === 'Düşük'
+                                                ? 'blue'
+                                                : task.priority === 'Normal'
+                                                    ? 'green'
+                                                    : 'red',
+                                        color: 'white',
+                                        borderRadius: 1,
+                                        textAlign: 'center',
+                                        padding: '4px 8px',
+                                      }}
+                                  >
+                                    {task.priority}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  {task.startDate && task.endDate
+                                      ? `${task.startDate} - ${task.endDate}`
+                                      : 'Belirtilmemiş'}
+                                </TableCell>
+                                <TableCell>
+                                  {task.lastUpdatedBy} -{' '}
+                                  {task.lastUpdatedAt?.toLocaleDateString('tr-TR')}
+                                </TableCell>
+                                <TableCell>
+                                  <IconButton onClick={() => handleEditTask(task)}>
+                                    <EditIcon />
+                                  </IconButton>
+                                </TableCell>
+                              </TableRow>
+                          ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+            ))
         )}
-        {/* Görev Oluşturma Modalı */}
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          <h3>Yeni Görev Oluştur</h3>
-          <form onSubmit={handleCreateTask}>
-            <Input
+        {/* Görev Oluşturma/Düzenleme Modalı */}
+        <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)} fullWidth maxWidth="sm">
+          <DialogTitle>{taskToEdit ? 'Görevi Düzenle' : 'Yeni Görev'}</DialogTitle>
+          <DialogContent>
+            <TextField
                 label="Görev Başlığı"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                required
+                fullWidth
+                margin="normal"
             />
-            <Input
+            <TextField
                 label="Görev Açıklaması"
                 value={taskDescription}
                 onChange={(e) => setTaskDescription(e.target.value)}
-                required
+                fullWidth
+                margin="normal"
+                multiline
+                rows={4}
             />
-            <label className={styles.label}>Durum</label>
-            <select
-                className={styles.select}
-                value={taskStatus}
-                onChange={(e) => setTaskStatus(e.target.value)}
-            >
-              <option value="To Do">Yapılacak</option>
-              <option value="In Progress">Devam Ediyor</option>
-              <option value="Done">Tamamlandı</option>
-            </select>
-            <Button type="submit">Görev Oluştur</Button>
-          </form>
-        </Modal>
-        {/* Görev Düzenleme Modalı */}
-        {taskToEdit && (
-            <Modal
-                isOpen={isEditModalOpen}
-                onClose={() => {
-                  setIsEditModalOpen(false);
-                  setTaskToEdit(null);
-                  setTaskTitle('');
-                  setTaskDescription('');
-                  setTaskStatus('To Do');
-                }}
-            >
-              <h3>Görev Düzenle</h3>
-              <form onSubmit={handleUpdateTask}>
-                <Input
-                    label="Görev Başlığı"
-                    value={taskTitle}
-                    onChange={(e) => setTaskTitle(e.target.value)}
-                    required
-                />
-                <Input
-                    label="Görev Açıklaması"
-                    value={taskDescription}
-                    onChange={(e) => setTaskDescription(e.target.value)}
-                    required
-                />
-                <label className={styles.label}>Durum</label>
-                <select
-                    className={styles.select}
-                    value={taskStatus}
-                    onChange={(e) => setTaskStatus(e.target.value)}
-                >
-                  <option value="To Do">Yapılacak</option>
-                  <option value="In Progress">Devam Ediyor</option>
-                  <option value="Done">Tamamlandı</option>
-                </select>
-                <Button type="submit">Görevi Güncelle</Button>
-              </form>
-            </Modal>
-        )}
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Durum</InputLabel>
+              <Select
+                  value={taskStatus}
+                  onChange={(e) => setTaskStatus(e.target.value)}
+                  variant="outlined"
+              >
+                <MenuItem value="Yapılacak">Yapılacak</MenuItem>
+                <MenuItem value="Yapılıyor">Yapılıyor</MenuItem>
+                <MenuItem value="Tamamlandı">Tamamlandı</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Öncelik</InputLabel>
+              <Select
+                  value={taskPriority}
+                  onChange={(e) => setTaskPriority(e.target.value)}
+                  variant="outlined"
+              >
+                <MenuItem value="Düşük">Düşük</MenuItem>
+                <MenuItem value="Normal">Normal</MenuItem>
+                <MenuItem value="Yüksek">Yüksek</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+                label="Başlangıç Tarihi"
+                type="date"
+                value={taskStartDate}
+                onChange={(e) => setTaskStartDate(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+                label="Bitiş Tarihi"
+                type="date"
+                value={taskEndDate}
+                onChange={(e) => setTaskEndDate(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsModalOpen(false)}>İptal</Button>
+            <Button onClick={handleCreateOrUpdateTask}>
+              {taskToEdit ? 'Güncelle' : 'Oluştur'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+        {/* Kullanıcı Atama Modalı */}
+        <Dialog
+            open={isAssignModalOpen}
+            onClose={() => setIsAssignModalOpen(false)}
+            fullWidth
+            maxWidth="sm"
+        >
+          <DialogTitle>Kullanıcı Atama</DialogTitle>
+          <DialogContent>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Kullanıcılar</InputLabel>
+              <Select
+                  multiple
+                  value={selectedUsers}
+                  onChange={(e) => setSelectedUsers(e.target.value as string[])}
+                  variant="outlined"
+              >
+                {users.map((user) => (
+                    <MenuItem key={user.id} value={user.displayName}>
+                      {user.displayName}
+                    </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsAssignModalOpen(false)}>İptal</Button>
+            <Button onClick={handleSaveAssignees}>Kaydet</Button>
+          </DialogActions>
+        </Dialog>
       </AppLayout>
   );
 };

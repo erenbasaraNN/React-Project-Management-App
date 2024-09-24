@@ -13,9 +13,16 @@ export interface Task {
     title: string;
     description: string;
     status: string;
+    priority: string;
+    startDate?: string;
+    endDate?: string;
     projectId: string;
-    assignedTo?: string;
+    ownerId: string;
+    assignees?: string[];
     createdAt: Date;
+    lastUpdatedBy?: string;
+    lastUpdatedAt?: Date;
+    statusGroup?: string;
 }
 
 export interface Comment {

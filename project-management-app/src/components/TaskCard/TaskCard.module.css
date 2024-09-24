@@ -32,8 +32,22 @@
     padding: 6px 10px;
     border-radius: 4px;
     cursor: pointer;
+    margin-right: 8px;
 }
 
 .editButton:hover {
+    opacity: 0.9;
+}
+
+.deleteButton {
+    background-color: #e57373;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.deleteButton:hover {
     opacity: 0.9;
 }
